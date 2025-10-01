@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fisherman Cashout Game</title>
+<style>
+  :root{
+    --bg:#0e1621;
+    --panel:#152232;
+    --panel-2:#0f1b2a;
+    --accent:#3db2ff;
+    --success:#43d17d;
+    --warn:#ffb020;
+    --danger:#ff5c5c;
+    --text:#e9f1ff;
+    --muted:#a8b3c7;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+    background: radial-gradient(1200px 600px at 70% -10%, #1a2b44 0%, var(--bg) 55%);
+    color:var(--text);
+  }
+  .wrap{
+    max-width:1100px;
+    margin:24px auto;
+    padding:0 16px 56px;
+    display:grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap:18px;
+  }
+  header{
+    grid-column:1/-1;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px; background:var(--panel); border:1px solid #21344b; border-radius:12px;
+  }
+  header .title{
+    font-weight:700; letter-spacing:0.3px; font-size:18px;
+  }
+  header .wallet{
+    display:flex; gap:12px; align-items:center;
+  }
+  .pill{
+    background:var(--panel-2); border:1px solid #22364f; padding:8px 12px; border-radius:999px; color:var(--muted); font-size:14px;
+  }
+  .pill strong{color:var(--text)}
+  .grid{
+    display:grid; gap:18px;
+  }
+  .card{
+    background:var(--panel); border:1px solid #21344b; border-radius:14px; padding:16px;
+  }
+  .card h3{margin:0 0 10px 0; font-size:16px; letter-spacing:0.2px;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  input[type="number"]{
+    background:var(--panel-2); color:var(--text); border:1px solid #253a55; border-radius:10px; padding:10px 12px; width:140px; font-size:15px;
+  }
+  button{
+    border:0; border-radius:10px; padding:10px 14px; font-weight:700; letter-spacing:0.2px; cursor:pointer;
+    background:var(--accent); color:#041625; transition:transform .06s ease, opacity .2s ease, background .2s ease;
+  }
+  button.secondary{ background:#2e425d; color:#d7e6ff;}
+  button.warn{ background:var(--warn); color:#231a00;}
+  button.success{ background:var(--success); color:#042413; }
+  button.danger{ background:var(--danger); color:#2b0000; }
+  button:disabled{ opacity:.55; cursor:not-allowed; }
+  .game{
+    position:relative;
+    overflow:hidden;
+    aspect-ratio: 16/9;
+    border-radius:12px;
+    background:
+      radial-gradient(80% 130% at 50% 60%, #16304a 0%, #0c1a29 62%),
+      linear-gradient(180deg, #071321 0%, #0c1828 100%);
+    border:1px solid #1c2e45;
+  }
+  .lake{
+    position:absolute; inset:0; overflow:hidden;
+  }
+  .water{
+    position:absolute; left:-10%; right:-10%; height:40%;
+    bottom:0;
+    background: linear-gradient(180deg, rgba(61,178,255,.25), rgba(25,66,109,.7) 50%, rgba(6,24,45,.95));
+    filter:saturate(1.2);
+  }
+  .shore{
+    position:absolute; left:0; right:0; bottom:40%;
+    height:18px; background:linear-gradient(180deg,#20364f,#0e1c2d);
+    box-shadow: 0 -8px 24px rgba(0,0,0,.25) inset;
+  }
+  .fisher{
+    position:absolute; left:10%; bottom:45%;
+    width:140px; height:140px;
+  }
+  .fisher .body{
+    position:absolute; bottom:0; left:0; width:70px; height:90px; background:#2f3a4a; border-radius:10px; border:1px solid #3b4a60;
+    box-shadow:0 8px 20px rgba(0,0,0,.3);
+  }
+  .fisher .rod{
+    position:absolute; left:64px; bottom:76px; width:2px; height:170px; background:#c7a97a; transform-origin:bottom left;
+    transform:rotate(-22deg);
+    box-shadow:0 0 0 1px rgba(0,0,0,.2);
+  }
+  .line{
+    position:absolute; left:64px; bottom:76px; width:2px; height:210px; background:rgba(220,240,255,.85);
+    transform-origin: top; transform: rotate(6deg);
+  }
+  .bobber{
+    position:absolute; left:250px; bottom:26%;
+    width:12px; height:12px; background:#ff5c5c; border-radius:50%; border:2px solid white; box-shadow:0 3px 10px rgba(0,0,0,.4);
+    animation: bob 1.4s ease-in-out infinite;
+  }
+  @keyframes bob{ 0%{transform:translateY(0)} 50%{transform:translateY(-6px)} 100%{transform:translateY(0)} }
+  .splash{
+    position:absolute; width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.9);
+    pointer-events:none; opacity:0; transition: opacity .25s ease;
+  }
+  .hud{
+    position:absolute; top:12px; right:12px;
+    display:flex; gap:12px; flex-wrap:wrap;
+  }
+  .tag{
+    background:rgba(8,18,30,.6); border:1px solid #243953; padding:8px 10px; border-radius:10px; font-size:13px; color:#c7d7f0;
+  }
+  .tag strong{color:#fff}
+  .big{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    font-size:56px; font-weight:900; letter-spacing:1px; text-shadow:0 8px 24px rgba(0,0,0,.5);
+    opacity:0; transition: opacity .25s ease, transform .25s ease;
+    pointer-events:none;
+  }
+  .big.show{ opacity:1; transform:translate(-50%,-52%); }
+  .big.win{ color:var(--success); }
+  .big.break{ color:var(--danger); }
+  .controls .hint{font-size:12px; color:var(--muted)}
+  .history{ max-height:260px; overflow:auto; border-radius:10px; background:var(--panel-2); border:1px solid #243953; padding:8px;}
+  .history .row{ justify-content:space-between; border-bottom:1px dashed #2a4160; padding:6px 2px;}
+  .history .row:last-child{border-bottom:0}
+  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">🎣 Fisherman Cashout</div>
+      <div class="wallet">
+        <div class="pill">Balance: <strong id="wallet">$1,000.00</strong></div>
+        <div class="pill">Current Bet: <strong id="currentBet">$0.00</strong></div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card game">
+        <div class="lake" id="lake">
+          <div class="shore"></div>
+          <div class="water"></div>
+
+          <div class="fisher">
+            <div class="body"></div>
+            <div class="rod" id="rod"></div>
+            <div class="line" id="line"></div>
+          </div>
+
+          <div class="bobber" id="bobber"></div>
+          <div class="splash" id="splash"></div>
+        </div>
+
+        <div class="hud">
+          <div class="tag">Attempts: <strong id="attempts">0</strong></div>
+          <div class="tag">Break Chance: <strong id="breakChance">0%</strong></div>
+          <div class="tag">Total X: <strong id="totalX">0.00×</strong></div>
+          <div class="tag">Potential Win: <strong id="potentialWin">$0.00</strong></div>
+        </div>
+
+        <div class="big" id="big"></div>
+      </div>
+
+      <div class="card controls">
+        <h3>Bet & Round</h3>
+        <div class="row" style="margin-bottom:8px">
+          <input id="betInput" type="number" min="1" step="1" placeholder="Bet amount" />
+          <button id="placeBetBtn" class="">Place Bet</button>
+          <button id="cancelBetBtn" class="secondary" disabled>Cancel</button>
+        </div>
+        <div class="row" style="margin-bottom:8px">
+          <button id="tryBtn" class="warn" disabled>🎯 Try (Attempt)</button>
+          <button id="cashoutBtn" class="success" disabled>💰 Cash Out</button>
+          <button id="forfeitBtn" class="danger" disabled>⛔ Forfeit Round</button>
+        </div>
+        <div class="hint">Cash Out becomes available after your first successful try (if the line hasn't broken). Each try adds a random X to your total, but also increases the chance that the line breaks.</div>
+      </div>
+
+      <div class="card">
+        <h3>Config (you can tweak)</h3>
+        <div class="row" style="margin-bottom:10px">
+          <label class="pill">Min X per try:&nbsp;<input id="minX" type="number" step="0.01" value="1.10" style="width:90px"></label>
+          <label class="pill">Max X per try:&nbsp;<input id="maxX" type="number" step="0.01" value="1.80" style="width:90px"></label>
+          <label class="pill">Base Break %:&nbsp;<input id="baseBreak" type="number" step="0.01" value="12" style="width:80px"></label>
+          <label class="pill">+% per try:&nbsp;<input id="stepBreak" type="number" step="0.01" value="10" style="width:80px"></label>
+          <label class="pill">Max Break %:&nbsp;<input id="capBreak" type="number" step="0.01" value="95" style="width:80px"></label>
+        </div>
+        <div class="hint">Example: with base 12% and +10% per try — Try#1 = 12%, Try#2 = 22%, Try#3 = 32%, etc. (capped by Max).</div>
+      </div>
+
+      <div class="card">
+        <h3>Round History</h3>
+        <div id="history" class="history mono"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  // ------------------ State ------------------
+  const state = {
+    wallet: 1000,
+    inRound: false,
+    bet: 0,
+    attempts: 0,
+    totalX: 0,
+    broke: false,
+    // Config
+    minX: 1.10,
+    maxX: 1.80,
+    baseBreak: 12,   // percent
+    stepBreak: 10,   // percent added each try
+    capBreak: 95     // percent cap
+  };
+
+  // ------------------ Elements ------------------
+  const $ = sel => document.querySelector(sel);
+  const walletEl = $('#wallet');
+  const currentBetEl = $('#currentBet');
+  const attemptsEl = $('#attempts');
+  const totalXEl = $('#totalX');
+  const breakChanceEl = $('#breakChance');
+  const potentialWinEl = $('#potentialWin');
+  const historyEl = $('#history');
+
+  const betInput = $('#betInput');
+  const placeBetBtn = $('#placeBetBtn');
+  const cancelBetBtn = $('#cancelBetBtn');
+  const tryBtn = $('#tryBtn');
+  const cashoutBtn = $('#cashoutBtn');
+  const forfeitBtn = $('#forfeitBtn');
+
+  const minXInp = $('#minX');
+  const maxXInp = $('#maxX');
+  const baseBreakInp = $('#baseBreak');
+  const stepBreakInp = $('#stepBreak');
+  const capBreakInp = $('#capBreak');
+
+  const bigEl = $('#big');
+  const splashEl = $('#splash');
+  const bobberEl = $('#bobber');
+  const rodEl = $('#rod');
+  const lineEl = $('#line');
+
+  // ------------------ Utilities ------------------
+  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+  function fmtMoney(n){ return '$' + n.toFixed(2); }
+  function randFloat(min, max){ return Math.random() * (max - min) + min; }
+  function roll(percent){ return Math.random() * 100 < percent; }
+
+  function currentBreakChance(){
+    const pct = clamp(state.baseBreak + state.stepBreak * state.attempts, 0, state.capBreak);
+    return pct;
+  }
+
+  function updateConfigFromInputs(){
+    state.minX = parseFloat(minXInp.value) || 1.10;
+    state.maxX = parseFloat(maxXInp.value) || 1.80;
+    if(state.maxX < state.minX){ state.maxX = state.minX; maxXInp.value = state.maxX.toFixed(2); }
+    state.baseBreak = parseFloat(baseBreakInp.value) || 12;
+    state.stepBreak = parseFloat(stepBreakInp.value) || 10;
+    state.capBreak  = parseFloat(capBreakInp.value)  || 95;
+    renderHUD();
+  }
+
+  [minXInp, maxXInp, baseBreakInp, stepBreakInp, capBreakInp].forEach(inp=>{
+    inp.addEventListener('change', updateConfigFromInputs);
+  });
+
+  function renderHUD(){
+    walletEl.textContent = fmtMoney(state.wallet);
+    currentBetEl.textContent = fmtMoney(state.bet);
+    attemptsEl.textContent = state.attempts;
+    totalXEl.textContent = state.totalX.toFixed(2) + '×';
+    const br = currentBreakChance();
+    breakChanceEl.textContent = state.inRound ? br.toFixed(0) + '%' : '0%';
+    const potential = state.inRound ? state.bet * state.totalX : 0;
+    potentialWinEl.textContent = fmtMoney(potential);
+
+    tryBtn.disabled = !(state.inRound) || state.broke;
+    cashoutBtn.disabled = !(state.inRound && state.attempts >= 1 && !state.broke);
+    cancelBetBtn.disabled = !(state.inRound && state.attempts===0 && !state.broke);
+    forfeitBtn.disabled = !(state.inRound);
+    betInput.disabled = state.inRound;
+    placeBetBtn.disabled = state.inRound;
+  }
+
+  function pushHistory(entry){
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<div>${entry.left}</div><div>${entry.right}</div>`;
+    historyEl.prepend(row);
+  }
+
+  function showBig(text, type){
+    bigEl.textContent = text;
+    bigEl.className = 'big show ' + (type || '');
+    setTimeout(()=> bigEl.classList.remove('show'), 1200);
+  }
+
+  function splashAt(x,y){
+    const r = splashEl;
+    r.style.left = x + 'px';
+    r.style.top  = y + 'px';
+    r.style.opacity = 1;
+    setTimeout(()=> r.style.opacity = 0, 250);
+  }
+
+  function resetVisuals(){
+    bigEl.className='big';
+  }
+
+  function animateTug(success=true){
+    // quick rod twitch + line wiggle
+    rodEl.style.transition = 'transform .12s ease';
+    lineEl.style.transition = 'transform .12s ease';
+    rodEl.style.transform = 'rotate(-28deg)';
+    lineEl.style.transform = 'rotate(10deg)';
+    setTimeout(()=>{
+      rodEl.style.transform = 'rotate(-22deg)';
+      lineEl.style.transform = 'rotate(6deg)';
+    }, 120);
+    // splash near bobber
+    const b = bobberEl.getBoundingClientRect();
+    const lake = document.getElementById('lake').getBoundingClientRect();
+    const x = b.left + b.width/2 - lake.left;
+    const y = b.top + b.height/2 - lake.top;
+    splashAt(x,y);
+  }
+
+  // ------------------ Round Flow ------------------
+  function startRound(bet){
+    resetVisuals();
+    state.inRound = true;
+    state.bet = bet;
+    state.attempts = 0;
+    state.totalX = 0;
+    state.broke = false;
+    pushHistory({left:`New round started`, right:`Bet ${fmtMoney(bet)}`});
+    renderHUD();
+  }
+
+  function cancelRound(){
+    // Return bet (since no attempt happened)
+    pushHistory({left:`Bet canceled`, right:`Refund ${fmtMoney(state.bet)}`});
+    state.inRound = false;
+    state.wallet += state.bet;
+    state.bet = 0;
+    renderHUD();
+  }
+
+  function endRoundLose(){
+    pushHistory({left:`Line broke!`, right:`Lost ${fmtMoney(state.bet)}`});
+    showBig('LINE BROKE!', 'break');
+    state.inRound = false;
+    state.bet = 0;
+    renderHUD();
+  }
+
+  function endRoundWin(){
+    const win = +(state.bet * state.totalX).toFixed(2);
+    state.wallet += win;
+    pushHistory({left:`CASHED OUT @ ${state.totalX.toFixed(2)}×`, right:`Won ${fmtMoney(win)}`});
+    showBig('CASHED OUT!', 'win');
+    state.inRound = false;
+    state.bet = 0;
+    renderHUD();
+  }
+
+  function doTry(){
+    if(!state.inRound || state.broke) return;
+
+    const br = currentBreakChance();
+    const broke = roll(br);
+
+    animateTug(!broke);
+
+    if(broke){
+      state.broke = true;
+      // lose bet already deducted earlier at place-bet time
+      endRoundLose();
+      return;
+    }
+
+    // Success → add random X between min and max (sum model)
+    const x = randFloat(state.minX, state.maxX);
+    state.attempts += 1;
+    state.totalX = +(state.totalX + x).toFixed(2);
+
+    pushHistory({left:`Try #${state.attempts} success`, right:`+${x.toFixed(2)}× (Total ${state.totalX.toFixed(2)}×)`});
+    showBig(`+${x.toFixed(2)}×`, '');
+    renderHUD();
+  }
+
+  // ------------------ Events ------------------
+  placeBetBtn.addEventListener('click', ()=>{
+    const amt = Math.floor(Number(betInput.value || '0'));
+    if(!Number.isFinite(amt) || amt <= 0){ alert('Enter a valid bet amount.'); return; }
+    if(amt > state.wallet){ alert('Insufficient balance.'); return; }
+
+    state.wallet -= amt; // hold bet
+    startRound(amt);
+  });
+
+  cancelBetBtn.addEventListener('click', ()=>{
+    if(state.inRound && state.attempts===0 && !state.broke){
+      cancelRound();
+    }
+  });
+
+  forfeitBtn.addEventListener('click', ()=>{
+    if(!state.inRound) return;
+    // Player gives up → loses the bet
+    pushHistory({left:`Round forfeited`, right:`Lost ${fmtMoney(state.bet)}`});
+    state.inRound = false;
+    state.bet = 0;
+    renderHUD();
+  });
+
+  tryBtn.addEventListener('click', doTry);
+
+  cashoutBtn.addEventListener('click', ()=>{
+    if(!(state.inRound && state.attempts>=1 && !state.broke)) return;
+    endRoundWin();
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e)=>{
+    if(e.key.toLowerCase()==='t'){ // Try
+      doTry();
+    }else if(e.key.toLowerCase()==='c'){ // Cashout
+      if(!(state.inRound && state.attempts>=1 && !state.broke)) return;
+      endRoundWin();
+    }
+  });
+
+  // Initial render
+  renderHUD();
+
+})();
+</script>
+</body>
+</html>
